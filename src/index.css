@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', sans-serif;
+  
+  --color-brand-50: #f4f8f5;
+  --color-brand-100: #e3eedc;
+  --color-brand-200: #c6e0b7;
+  --color-brand-300: #9fcb8d;
+  --color-brand-400: #74ad5f;
+  --color-brand-500: #558f40;
+  --color-brand-600: #427230;
+  --color-brand-700: #335925;
+  --color-brand-800: #2b491f;
+  --color-brand-900: #223c1a;
+  
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #f7f9f6;
+  color: #1e293b;
+  min-height: 100vh;
+  margin: 0;
+}
+
+/* Custom styles for animations and layouts */
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* Chrome, Safari, Edge, Opera: Remove number input spinner arrows */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox: Remove number input spinner arrows */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Scrollbar customizations */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
