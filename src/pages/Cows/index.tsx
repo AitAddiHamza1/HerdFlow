@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { cowsRepository } from '../../repositories/cowsRepository';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { formatDate } from '../../utils/date';
 import { 
   Search, 
   Plus, 
@@ -50,6 +51,7 @@ export const Cows: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['cows', user?.uid] });
       resetForm();
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (err: any) => {
       setFormError(err.message || 'Failed to add cow.');
     }
@@ -62,6 +64,7 @@ export const Cows: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['cows', user?.uid] });
       resetForm();
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (err: any) => {
       setFormError(err.message || 'Failed to edit cow.');
     }
@@ -74,6 +77,7 @@ export const Cows: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['inseminations', user?.uid] });
       setConfirmDeleteId(null);
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (err: any) => {
       alert(err.message || 'Failed to delete cow.');
     }
@@ -317,10 +321,7 @@ export const Cows: React.FC = () => {
                       {cow.breed || <span className="text-slate-300 italic">{t('cows.notSet')}</span>}
                     </td>
                     <td className="px-6 py-4.5 text-slate-400 text-xs">
-                      {cow.createdAt?.toDate 
-                        ? cow.createdAt.toDate().toLocaleDateString(undefined, { dateStyle: 'medium' })
-                        : 'Just now'
-                      }
+                      {formatDate(cow.createdAt) || 'Just now'}
                     </td>
                     <td className="px-6 py-4.5 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">

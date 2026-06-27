@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { cowsRepository } from '../../repositories/cowsRepository';
 import { inseminationRepository } from '../../repositories/inseminationRepository';
 import { calculateCalvingDetails, getLatestActiveCycle } from '../../utils/calving';
+import { formatDate } from '../../utils/date';
 import { 
   CheckCircle,
   ChevronRight,
@@ -185,7 +186,7 @@ export const UpcomingCalvings: React.FC = () => {
                         <div className="flex justify-between">
                           <span>{t('calving.expectedCalvingLabel')}</span>
                           <span className="text-slate-700">
-                            {item.expectedCalvingDate.toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                            {formatDate(item.expectedCalvingDate)}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -203,7 +204,7 @@ export const UpcomingCalvings: React.FC = () => {
                           <Clock className="h-3.5 w-3.5" />
                           <span>
                             {t('calving.loggedDateText', { 
-                              date: item.latestInsemination.date.toDate().toLocaleDateString(undefined, { dateStyle: 'short' }) 
+                              date: formatDate(item.latestInsemination.date) 
                             })}
                           </span>
                         </span>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authService } from '../../services/authService';
-import { User, Mail, Lock, Sprout, ArrowRight } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export const Register: React.FC = () => {
@@ -33,6 +33,7 @@ export const Register: React.FC = () => {
     try {
       await authService.register(email, password, name);
       navigate('/');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/email-already-in-use') {

@@ -54,7 +54,7 @@ export function generateNotifications(
 
     // We generate alerts for positive countdowns up to 60 days
     if (daysRemaining >= 0 && daysRemaining <= 60) {
-      let level = '';
+      let level: string;
       if (daysRemaining <= 7) {
         level = '7 days';
       } else if (daysRemaining <= 15) {

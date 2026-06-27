@@ -7,6 +7,7 @@ import { cowsRepository } from '../../repositories/cowsRepository';
 import { inseminationRepository } from '../../repositories/inseminationRepository';
 import { calculateCalvingDetails, getLatestActiveCycle } from '../../utils/calving';
 import { generateNotifications } from '../../utils/notifications';
+import { formatDate } from '../../utils/date';
 import { 
   Database, 
   Heart, 
@@ -51,7 +52,7 @@ export const Dashboard: React.FC = () => {
   });
 
   let cowsApproachingCalvingCount = 0;
-  Object.entries(inseminationsByCow).forEach(([_, records]) => {
+  Object.values(inseminationsByCow).forEach((records) => {
     const activeCycle = getLatestActiveCycle(records);
     if (activeCycle.length === 0) return;
     
@@ -209,10 +210,7 @@ export const Dashboard: React.FC = () => {
                             </td>
                             <td className="px-5 py-3.5 font-bold text-slate-700">{ins.bullName}</td>
                             <td className="px-5 py-3.5">
-                              {ins.date?.toDate 
-                                ? ins.date.toDate().toLocaleDateString(undefined, { dateStyle: 'medium' })
-                                : 'Invalid Date'
-                              }
+                              {formatDate(ins.date)}
                             </td>
                             <td className="px-5 py-3.5 text-slate-500 font-semibold">
                               {ins.cost > 0 ? `$${ins.cost.toFixed(2)}` : <span className="text-slate-300">-</span>}

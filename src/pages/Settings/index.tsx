@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { User, Mail, Calendar, Sprout, ShieldCheck, Edit2, X, Check, Globe } from 'lucide-react';
+import { formatDate } from '../../utils/date';
 
 export const Settings: React.FC = () => {
   const { profile, loading, updateProfileName } = useAuth();
@@ -15,7 +16,9 @@ export const Settings: React.FC = () => {
   // Sync state name with loaded profile
   useEffect(() => {
     if (profile) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setEditName(profile.name);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [profile]);
 
@@ -31,9 +34,10 @@ export const Settings: React.FC = () => {
     try {
       await updateProfileName(editName);
       setIsEditing(false);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setError(err.message || 'Failed to update profile name.');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setError((err as any).message || 'Failed to update profile name.');
     } finally {
       setSubmitting(false);
     }
@@ -171,10 +175,7 @@ export const Settings: React.FC = () => {
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{t('settings.created')}</span>
                 </div>
                 <p className="text-sm font-bold text-slate-850">
-                  {profile.createdAt?.toDate
-                    ? profile.createdAt.toDate().toLocaleDateString(undefined, { dateStyle: 'long' })
-                    : t('common.loading')
-                  }
+                  {formatDate(profile.createdAt) || t('common.loading')}
                 </p>
               </div>
 

@@ -17,6 +17,12 @@ import { cowsRepository } from './cowsRepository';
 const COWS_COLLECTION = 'cows';
 const INSEMINATIONS_SUBCOLLECTION = 'inseminations';
 
+const compareInseminationsDesc = (a: Insemination, b: Insemination) => {
+  const timeA = a.date?.seconds ? a.date.seconds * 1000 : (a.date?.toDate ? a.date.toDate().getTime() : new Date(a.date as unknown as string).getTime());
+  const timeB = b.date?.seconds ? b.date.seconds * 1000 : (b.date?.toDate ? b.date.toDate().getTime() : new Date(b.date as unknown as string).getTime());
+  return timeB - timeA;
+};
+
 export const inseminationRepository = {
   /**
    * Fetch all inseminations for a specific cow, sorted by date descending
@@ -34,7 +40,7 @@ export const inseminationRepository = {
         ...docSnap.data()
       } as Insemination);
     });
-    return records;
+    return records.sort(compareInseminationsDesc);
   },
 
   /**
@@ -64,7 +70,7 @@ export const inseminationRepository = {
 
     const results = await Promise.all(fetchPromises);
     // Combine and sort all records by date descending
-    return results.flat().sort((a, b) => b.date.seconds - a.date.seconds);
+    return results.flat().sort(compareInseminationsDesc);
   },
 
   /**

@@ -10,17 +10,17 @@ import {
 } from '../../utils/calving';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { formatDate } from '../../utils/date';
+import { exportInseminationsToPDF } from '../../utils/pdfExport';
+import { DatePicker } from '../../components/ui/DatePicker';
 import { 
   ArrowLeft, 
   Calendar, 
-  DollarSign, 
   Heart, 
   Plus, 
   Trash2, 
   Edit2, 
-  X, 
   Clock, 
-  ChevronRight,
   TrendingUp,
   Activity,
   Shield,
@@ -31,9 +31,9 @@ import { Timestamp } from 'firebase/firestore';
 export const CowDetails: React.FC = () => {
   const { id: cowId = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Active tab state
   const [activeTab, setActiveTab] = useState<'profile' | 'inseminations' | 'milk' | 'health' | 'vaccinations' | 'expenses'>('profile');
@@ -75,10 +75,12 @@ export const CowDetails: React.FC = () => {
   // Setup profile edit values once loaded
   React.useEffect(() => {
     if (cow) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setEditNumber(cow.number);
       setEditName(cow.name || '');
       setEditBreed(cow.breed || '');
       setEditNotes(cow.notes || '');
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [cow]);
 
@@ -92,6 +94,7 @@ export const CowDetails: React.FC = () => {
       setIsEditingProfile(false);
       setProfileError('');
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (err: any) => {
       setProfileError(err.message || 'Failed to update cow profile.');
     }
@@ -105,6 +108,7 @@ export const CowDetails: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['inseminations', user?.uid] });
       resetInsForm();
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (err: any) => {
       setInsError(err.message || 'Failed to add insemination.');
     }
@@ -118,6 +122,7 @@ export const CowDetails: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['inseminations', user?.uid] });
       resetInsForm();
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (err: any) => {
       setInsError(err.message || 'Failed to update insemination.');
     }
@@ -130,6 +135,7 @@ export const CowDetails: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['inseminations', user?.uid] });
       setConfirmDeleteInsId(null);
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (err: any) => {
       alert(err.message || 'Failed to delete insemination.');
     }
@@ -146,6 +152,7 @@ export const CowDetails: React.FC = () => {
     setIsInsFormOpen(false);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEditInsClick = (record: any) => {
     setEditingInsId(record.id);
     const recDate = record.date.toDate();
@@ -200,6 +207,33 @@ export const CowDetails: React.FC = () => {
 
   // Derive Dynamic Order Map
   const orderMap = calculateDynamicOrderNumbers(inseminations);
+
+  // Sort inseminations descending for UI listing
+  const sortedInseminations = React.useMemo(() => {
+    return [...inseminations].sort((a, b) => {
+      const tA = a.date?.seconds || 0;
+      const tB = b.date?.seconds || 0;
+      return tB - tA;
+    });
+  }, [inseminations]);
+
+  const handleExportPDF = async () => {
+    if (!cow) return;
+    const lookup = new Map<string, { number: string; name?: string; breed?: string }>();
+    lookup.set(cow.id, { number: cow.number, name: cow.name, breed: cow.breed });
+    
+    await exportInseminationsToPDF({
+      inseminations: sortedInseminations,
+      cowsLookup: lookup,
+      breederName: profile?.name || 'Breeder',
+      language: i18n.language as 'ar' | 'fr',
+      cowDetailsMode: {
+        cowNumber: cow.number,
+        cowName: cow.name,
+        breed: cow.breed
+      }
+    });
+  };
 
   if (isLoadingCow) {
     return (
@@ -288,13 +322,13 @@ export const CowDetails: React.FC = () => {
                   <div className="flex justify-between">
                     <span>{t('cows.expectedCalvingDate')}:</span>
                     <span className="text-slate-700">
-                      {calvingDetails.expectedCalvingDate.toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                      {formatDate(calvingDetails.expectedCalvingDate)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>{t('cows.latestInseminationDate')}:</span>
                     <span className="text-slate-700">
-                      {latestInsemination.date.toDate().toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                      {formatDate(latestInsemination.date)}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -325,10 +359,7 @@ export const CowDetails: React.FC = () => {
               <div className="flex justify-between border-b border-slate-50 pb-2">
                 <span>{t('cows.createdDate')}:</span>
                 <span className="text-slate-800">
-                  {cow.createdAt?.toDate 
-                    ? cow.createdAt.toDate().toLocaleDateString(undefined, { dateStyle: 'medium' })
-                    : t('cows.justNow')
-                  }
+                  {formatDate(cow.createdAt) || t('cows.justNow')}
                 </span>
               </div>
               <div>
@@ -353,7 +384,7 @@ export const CowDetails: React.FC = () => {
                 <button
                   key={tab.id}
                   disabled={tab.disabled}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id)}
                   className={`
                     flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition duration-150 whitespace-nowrap cursor-pointer
                     ${tab.disabled 
@@ -510,25 +541,36 @@ export const CowDetails: React.FC = () => {
                     <h3 className="font-display text-lg font-bold text-slate-800">{t('cows.artificialInseminations')}</h3>
                     <p className="text-xs text-slate-400 font-semibold mt-0.5">{t('cows.trackProcedures')}</p>
                   </div>
-                  <button
-                    onClick={() => {
-                      if (isInsFormOpen) {
-                        resetInsForm();
-                      } else {
-                        setIsInsFormOpen(true);
-                      }
-                    }}
-                    className="flex items-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 px-3.5 py-2 text-xs font-bold text-white transition cursor-pointer shadow-sm shadow-brand-100"
-                  >
-                    {isInsFormOpen ? (
-                      <span>{t('cows.closeForm')}</span>
-                    ) : (
-                      <>
-                        <Plus className="h-3.5 w-3.5" />
-                        <span>{t('inseminations.logProcedure')}</span>
-                      </>
+                  <div className="flex items-center gap-2">
+                    {inseminations.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleExportPDF}
+                        className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-600 transition cursor-pointer"
+                      >
+                        {i18n.language === 'ar' ? 'تصدير PDF' : 'Exporter PDF'}
+                      </button>
                     )}
-                  </button>
+                    <button
+                      onClick={() => {
+                        if (isInsFormOpen) {
+                          resetInsForm();
+                        } else {
+                          setIsInsFormOpen(true);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 px-3.5 py-2 text-xs font-bold text-white transition cursor-pointer shadow-sm shadow-brand-100"
+                    >
+                      {isInsFormOpen ? (
+                        <span>{t('cows.closeForm')}</span>
+                      ) : (
+                        <>
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>{t('inseminations.logProcedure')}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Add Insemination form card */}
@@ -550,12 +592,9 @@ export const CowDetails: React.FC = () => {
                           <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                             {t('cows.inseminationDateLabel')}
                           </label>
-                          <input
-                            type="date"
-                            required
+                          <DatePicker
                             value={dateStr}
-                            onChange={(e) => setDateStr(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs text-slate-800 focus:border-brand-500 focus:outline-none"
+                            onChange={setDateStr}
                           />
                         </div>
 
@@ -657,7 +696,7 @@ export const CowDetails: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50 text-xs font-medium text-slate-700">
-                        {inseminations.map((record) => {
+                        {sortedInseminations.map((record) => {
                           const orderNum = orderMap[record.id] || 1;
                           const isLatestOfCycle = latestInsemination?.id === record.id;
                           return (
@@ -677,10 +716,7 @@ export const CowDetails: React.FC = () => {
                                 )}
                               </td>
                               <td className="py-3 px-2 text-slate-900 font-bold">
-                                {record.date?.toDate 
-                                  ? record.date.toDate().toLocaleDateString(undefined, { dateStyle: 'medium' })
-                                  : t('cows.invalidDate')
-                                }
+                                {formatDate(record.date) || t('cows.invalidDate')}
                               </td>
                               <td className="py-3 px-2 font-bold text-slate-800">{record.bullName}</td>
                               <td className="py-3 px-2 text-slate-500">

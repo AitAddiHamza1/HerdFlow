@@ -13,18 +13,21 @@ import {
   Edit3, 
   Search, 
   X, 
-  Sprout, 
   AlertTriangle,
   ArrowUpRight
 } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 import type { Insemination } from '../../types/insemination';
+import { formatDate } from '../../utils/date';
+import { exportInseminationsToPDF } from '../../utils/pdfExport';
+import { Combobox } from '../../components/ui/Combobox';
+import { DatePicker } from '../../components/ui/DatePicker';
 
 export const Inseminations: React.FC = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // State controls
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,6 +66,7 @@ export const Inseminations: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', variables.cowId] });
       resetForm();
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (err: any) => {
       setFormError(err.message || 'Failed to record insemination.');
     }
@@ -76,6 +80,7 @@ export const Inseminations: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', variables.cowId] });
       resetForm();
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (err: any) => {
       setFormError(err.message || 'Failed to update insemination.');
     }
@@ -89,6 +94,7 @@ export const Inseminations: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', variables.cowId] });
       setConfirmDeleteRecord(null);
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (err: any) => {
       alert(err.message || 'Failed to delete record.');
     }
@@ -182,6 +188,24 @@ export const Inseminations: React.FC = () => {
     );
   });
 
+  // Sort inseminations descending for UI listing
+  const sortedInseminations = React.useMemo(() => {
+    return [...filteredInseminations].sort((a, b) => {
+      const tA = a.date?.seconds || 0;
+      const tB = b.date?.seconds || 0;
+      return tB - tA;
+    });
+  }, [filteredInseminations]);
+
+  const handleExportPDF = async () => {
+    await exportInseminationsToPDF({
+      inseminations: sortedInseminations,
+      cowsLookup: cowLookup,
+      breederName: profile?.name || 'Breeder',
+      language: i18n.language as 'ar' | 'fr'
+    });
+  };
+
   const isLoading = isLoadingCows || isLoadingIns;
 
   return (
@@ -193,30 +217,40 @@ export const Inseminations: React.FC = () => {
           <p className="text-slate-500 text-sm mt-1">{t('inseminations.subtitle')}</p>
         </div>
         
-        {cows.length > 0 && (
-          <button
-            onClick={() => {
-              if (isFormOpen) {
-                resetForm();
-              } else {
-                setIsFormOpen(true);
-              }
-            }}
-            className="flex items-center gap-2 rounded-xl bg-brand-600 px-4.5 py-3 text-sm font-bold text-white hover:bg-brand-700 transition cursor-pointer shadow-md shadow-brand-100 self-start"
-          >
-            {isFormOpen ? (
-              <>
-                <X className="h-4.5 w-4.5" />
-                <span>{t('inseminations.cancelForm')}</span>
-              </>
-            ) : (
-              <>
-                <Plus className="h-4.5 w-4.5" />
-                <span>{t('inseminations.logInsemination')}</span>
-              </>
-            )}
-          </button>
-        )}
+        <div className="flex items-center gap-2 self-start">
+          {inseminations.length > 0 && (
+            <button
+              onClick={handleExportPDF}
+              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4.5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+            >
+              <span>{i18n.language === 'ar' ? 'تصدير PDF' : 'Exporter PDF'}</span>
+            </button>
+          )}
+          {cows.length > 0 && (
+            <button
+              onClick={() => {
+                if (isFormOpen) {
+                  resetForm();
+                } else {
+                  setIsFormOpen(true);
+                }
+              }}
+              className="flex items-center gap-2 rounded-xl bg-brand-600 px-4.5 py-3 text-sm font-bold text-white hover:bg-brand-700 transition cursor-pointer shadow-md shadow-brand-100"
+            >
+              {isFormOpen ? (
+                <>
+                  <X className="h-4.5 w-4.5" />
+                  <span>{t('inseminations.cancelForm')}</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4.5 w-4.5" />
+                  <span>{t('inseminations.logInsemination')}</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Warning if no cows registered */}
@@ -260,35 +294,31 @@ export const Inseminations: React.FC = () => {
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" htmlFor="cowSelect">
                   {t('inseminations.selectCowLabel')}
                 </label>
-                <select
-                  id="cowSelect"
-                  required
-                  disabled={!!editingRecord}
+                <Combobox
+                  options={cows.map(cow => ({
+                    value: cow.id,
+                    label: cow.name ? `${cow.name} (${cow.number})` : cow.number,
+                    number: cow.number,
+                    name: cow.name,
+                    breed: cow.breed
+                  }))}
                   value={selectedCowId}
-                  onChange={(e) => setSelectedCowId(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-3.5 text-sm text-slate-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-                >
-                  <option value="">{t('inseminations.chooseCowOption')}</option>
-                  {cows.map(cow => (
-                    <option key={cow.id} value={cow.id}>
-                      {cow.name ? `${cow.name} (${cow.number})` : cow.number}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedCowId}
+                  disabled={!!editingRecord}
+                  placeholder={t('inseminations.chooseCowOption')}
+                  searchPlaceholder={t('common.searchPlaceholder')}
+                  emptyMessage={t('inseminations.noRecords')}
+                />
               </div>
-
+ 
               {/* Date */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" htmlFor="insDate">
                   {t('inseminations.dateLabel')}
                 </label>
-                <input
-                  id="insDate"
-                  type="date"
-                  required
+                <DatePicker
                   value={dateStr}
-                  onChange={(e) => setDateStr(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-3.5 text-sm text-slate-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  onChange={setDateStr}
                 />
               </div>
 
@@ -422,7 +452,7 @@ export const Inseminations: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
-                {filteredInseminations.map((ins) => {
+                {sortedInseminations.map((ins) => {
                   const cowObj = cowLookup.get(ins.cowId);
                   const orderNum = cowInseminationsMap[ins.cowId]?.[ins.id] || 1;
                   return (
@@ -442,10 +472,7 @@ export const Inseminations: React.FC = () => {
                         {cowObj?.name || <span className="text-slate-350 italic font-normal">{t('cows.unnamed')}</span>}
                       </td>
                       <td className="px-6 py-4.5 font-bold text-slate-800">
-                        {ins.date?.toDate
-                          ? ins.date.toDate().toLocaleDateString(undefined, { dateStyle: 'medium' })
-                          : t('cows.justNow')
-                        }
+                        {formatDate(ins.date) || t('cows.justNow')}
                       </td>
                       <td className="px-6 py-4.5 font-bold">
                         <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-600 text-xs">

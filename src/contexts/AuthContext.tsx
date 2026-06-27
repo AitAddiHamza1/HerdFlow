@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
@@ -39,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             uid: currentUser.uid,
             name: currentUser.displayName || 'Breeder',
             email: currentUser.email || '',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             createdAt: { seconds: Date.now() / 1000, nanoseconds: 0 } as any
           });
         }
