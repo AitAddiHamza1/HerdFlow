@@ -44,7 +44,7 @@
 
 1. Clone the repository and navigate to the project directory:
    ```bash
-   cd LCORI_web
+   cd HerdFlow
    ```
 2. Install dependencies:
    ```bash
