@@ -15,7 +15,7 @@
     "i18next": "^26.3.1",
     "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^1.21.0",
-    "pdfmake": "^0.3.11",
+    "pdfmake-rtl": "^2.1.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-i18next": "^17.0.8",

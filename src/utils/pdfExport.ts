@@ -1,4 +1,4 @@
-import pdfMake from 'pdfmake/build/pdfmake';
+import pdfMake from 'pdfmake-rtl/build/pdfmake';
 import { formatDate } from './date';
 import type { Insemination } from '../types/insemination';
 
@@ -191,6 +191,7 @@ export async function exportInseminationsToPDF({
   // 6. Construct pdfmake Document Definition
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const docDefinition: any = {
+    rtl: isAr, // Force dynamic RTL document layout for Arabic
     pageMargins: [40, 40, 40, 50],
     defaultStyle: {
       font: 'Tajawal'
@@ -252,8 +253,9 @@ export async function exportInseminationsToPDF({
       // Inseminations Table
       {
         table: {
+          rtl: isAr, // Let pdfmake-rtl handle table columns and widths reversal automatically!
           headerRows: 1,
-          widths: [65, 90, 65, 50, 90, 85, 70],
+          widths: [90, 85, 65, 35, 85, 75, 80],
           body: tableBody
         },
         layout: {
@@ -300,11 +302,6 @@ export async function exportInseminationsToPDF({
       };
     }
   };
-
-  // Enable dynamic RTL layout in pdfmake
-  if (isAr) {
-    docDefinition.textDirection = 'rtl';
-  }
 
   // 7. Download PDF file
   const filename = cowDetailsMode 

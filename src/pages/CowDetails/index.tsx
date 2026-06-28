@@ -60,16 +60,16 @@ export const CowDetails: React.FC = () => {
 
   // Fetch Cow profile
   const { data: cow, isLoading: isLoadingCow, isError: isCowError } = useQuery({
-    queryKey: ['cow', cowId],
-    queryFn: () => cowsRepository.getById(cowId),
-    enabled: !!cowId,
+    queryKey: ['cow', user?.uid, cowId],
+    queryFn: () => cowsRepository.getById(user?.uid || '', cowId),
+    enabled: !!cowId && !!user?.uid,
   });
 
   // Fetch Inseminations for this cow
   const { data: inseminations = [], isLoading: isLoadingIns } = useQuery({
-    queryKey: ['inseminations', 'cow', cowId],
-    queryFn: () => inseminationRepository.getAllForCow(cowId),
-    enabled: !!cowId,
+    queryKey: ['inseminations', 'cow', user?.uid, cowId],
+    queryFn: () => inseminationRepository.getAllForCow(user?.uid || '', cowId),
+    enabled: !!cowId && !!user?.uid,
   });
 
   // Setup profile edit values once loaded
@@ -89,7 +89,7 @@ export const CowDetails: React.FC = () => {
     mutationFn: (data: { number: string; name?: string; breed?: string; notes?: string }) =>
       cowsRepository.update(user?.uid || '', cowId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cow', cowId] });
+      queryClient.invalidateQueries({ queryKey: ['cow', user?.uid, cowId] });
       queryClient.invalidateQueries({ queryKey: ['cows', user?.uid] });
       setIsEditingProfile(false);
       setProfileError('');
@@ -104,7 +104,7 @@ export const CowDetails: React.FC = () => {
     mutationFn: (data: { date: Timestamp; bullName: string; heatType: string; cost: number }) =>
       inseminationRepository.create(user?.uid || '', cowId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', cowId] });
+      queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', user?.uid, cowId] });
       queryClient.invalidateQueries({ queryKey: ['inseminations', user?.uid] });
       resetInsForm();
     },
@@ -116,9 +116,9 @@ export const CowDetails: React.FC = () => {
 
   const updateInsMutation = useMutation({
     mutationFn: (data: { id: string; date: Timestamp; bullName: string; heatType: string; cost: number }) =>
-      inseminationRepository.update(cowId, data.id, data),
+      inseminationRepository.update(user?.uid || '', cowId, data.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', cowId] });
+      queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', user?.uid, cowId] });
       queryClient.invalidateQueries({ queryKey: ['inseminations', user?.uid] });
       resetInsForm();
     },
@@ -129,9 +129,9 @@ export const CowDetails: React.FC = () => {
   });
 
   const deleteInsMutation = useMutation({
-    mutationFn: (id: string) => inseminationRepository.delete(cowId, id),
+    mutationFn: (id: string) => inseminationRepository.delete(user?.uid || '', cowId, id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', cowId] });
+      queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', user?.uid, cowId] });
       queryClient.invalidateQueries({ queryKey: ['inseminations', user?.uid] });
       setConfirmDeleteInsId(null);
     },
@@ -198,15 +198,22 @@ export const CowDetails: React.FC = () => {
     });
   };
 
-  // Derive Calving Predictions
-  const activeCycle = getLatestActiveCycle(inseminations);
-  // Sort active cycle by date ascending to get the absolute latest insemination of this cycle
-  const sortedActive = [...activeCycle].sort((a, b) => a.date.seconds - b.date.seconds);
-  const latestInsemination = sortedActive[sortedActive.length - 1];
-  const calvingDetails = calculateCalvingDetails(latestInsemination);
+  // Derive Calving Predictions (memoized)
+  const { latestInsemination, calvingDetails, activeCycle } = React.useMemo(() => {
+    const active = getLatestActiveCycle(inseminations);
+    const latest = active[active.length - 1];
+    const details = calculateCalvingDetails(latest);
+    return {
+      latestInsemination: latest,
+      calvingDetails: details,
+      activeCycle: active
+    };
+  }, [inseminations]);
 
-  // Derive Dynamic Order Map
-  const orderMap = calculateDynamicOrderNumbers(inseminations);
+  // Derive Dynamic Order Map (memoized)
+  const orderMap = React.useMemo(() => {
+    return calculateDynamicOrderNumbers(inseminations);
+  }, [inseminations]);
 
   // Sort inseminations descending for UI listing
   const sortedInseminations = React.useMemo(() => {

@@ -44,8 +44,7 @@ export function generateNotifications(
     if (activeCycle.length === 0) return;
 
     // Get the latest insemination of this active cycle (sorted chronologically)
-    const sortedActive = [...activeCycle].sort((a, b) => a.date.seconds - b.date.seconds);
-    const latestInsemination = sortedActive[sortedActive.length - 1];
+    const latestInsemination = activeCycle[activeCycle.length - 1];
 
     const calvingInfo = calculateCalvingDetails(latestInsemination, currentDate);
     if (!calvingInfo) return;

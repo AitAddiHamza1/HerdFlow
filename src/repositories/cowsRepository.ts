@@ -45,13 +45,17 @@ export const cowsRepository = {
   /**
    * Fetch a single cow document by ID
    */
-  async getById(cowId: string): Promise<Cow | null> {
+  async getById(userId: string, cowId: string): Promise<Cow | null> {
     const docRef = doc(db, COWS_COLLECTION, cowId);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
+      const cowData = docSnap.data();
+      if (cowData.userId !== userId) {
+        throw new Error("Unauthorized access to this cow record.");
+      }
       return {
-        id: docSnap.id,
-        ...docSnap.data()
+        ...cowData,
+        id: docSnap.id
       } as Cow;
     }
     return null;
@@ -100,7 +104,7 @@ export const cowsRepository = {
    */
   async update(userId: string, cowId: string, cowData: Omit<Cow, 'id' | 'userId' | 'createdAt'>): Promise<void> {
     // 1. If modifying cow number, verify uniqueness
-    const currentCow = await this.getById(cowId);
+    const currentCow = await this.getById(userId, cowId);
     if (!currentCow) {
       throw new Error("Cow not found.");
     }
@@ -132,7 +136,13 @@ export const cowsRepository = {
    * Note: In production we'd also delete the inseminations subcollection.
    * For this client-side client, we trigger deletion of the main cow document.
    */
-  async delete(cowId: string): Promise<void> {
+  async delete(userId: string, cowId: string): Promise<void> {
+    // Verify ownership first
+    const currentCow = await this.getById(userId, cowId);
+    if (!currentCow) {
+      throw new Error("Cow not found.");
+    }
+
     // First delete subcollection documents if they exist. We can do that by fetching all inseminations and deleting.
     const inseminationsRef = collection(db, COWS_COLLECTION, cowId, 'inseminations');
     const snap = await getDocs(inseminationsRef);

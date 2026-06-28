@@ -64,8 +64,7 @@ export const UpcomingCalvings: React.FC = () => {
       const activeCycle = getLatestActiveCycle(records);
       if (activeCycle.length === 0) return;
 
-      const sorted = [...activeCycle].sort((a, b) => a.date.seconds - b.date.seconds);
-      const latest = sorted[sorted.length - 1];
+      const latest = activeCycle[activeCycle.length - 1];
 
       const details = calculateCalvingDetails(latest);
       if (details && details.daysRemaining >= 0 && details.daysRemaining <= 60) {

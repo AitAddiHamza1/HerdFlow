@@ -37,39 +37,51 @@ export const Dashboard: React.FC = () => {
     enabled: !!user?.uid,
   });
 
-  // Calculate stats
-  const totalCows = cows.length;
-  const uniqueInseminatedCowIds = new Set(inseminations.map(ins => ins.cowId));
-  const inseminatedCowsCount = uniqueInseminatedCowIds.size;
+  // Calculate stats (memoized)
+  const { 
+    totalCows, 
+    inseminatedCowsCount, 
+    cowsApproachingCalvingCount 
+  } = React.useMemo(() => {
+    const total = cows.length;
+    const uniqueInseminatedCowIds = new Set(inseminations.map(ins => ins.cowId));
+    const inseminatedCount = uniqueInseminatedCowIds.size;
 
-  // Group inseminations by cowId
-  const inseminationsByCow: Record<string, typeof inseminations> = {};
-  inseminations.forEach(rec => {
-    if (!inseminationsByCow[rec.cowId]) {
-      inseminationsByCow[rec.cowId] = [];
-    }
-    inseminationsByCow[rec.cowId].push(rec);
-  });
+    // Group inseminations by cowId
+    const groups: Record<string, typeof inseminations> = {};
+    inseminations.forEach(rec => {
+      if (!groups[rec.cowId]) {
+        groups[rec.cowId] = [];
+      }
+      groups[rec.cowId].push(rec);
+    });
 
-  let cowsApproachingCalvingCount = 0;
-  Object.values(inseminationsByCow).forEach((records) => {
-    const activeCycle = getLatestActiveCycle(records);
-    if (activeCycle.length === 0) return;
-    
-    const sorted = [...activeCycle].sort((a, b) => a.date.seconds - b.date.seconds);
-    const latest = sorted[sorted.length - 1];
-    
-    const details = calculateCalvingDetails(latest);
-    if (details && details.daysRemaining >= 0 && details.daysRemaining <= 60) {
-      cowsApproachingCalvingCount++;
-    }
-  });
+    let approachingCount = 0;
+    Object.values(groups).forEach((records) => {
+      const activeCycle = getLatestActiveCycle(records);
+      if (activeCycle.length === 0) return;
+      
+      const latest = activeCycle[activeCycle.length - 1];
+      const details = calculateCalvingDetails(latest);
+      if (details && details.daysRemaining >= 0 && details.daysRemaining <= 60) {
+        approachingCount++;
+      }
+    });
 
-  // Generate reminders
-  const reminders = generateNotifications(inseminations, cows);
+    return {
+      totalCows: total,
+      inseminatedCowsCount: inseminatedCount,
+      cowsApproachingCalvingCount: approachingCount
+    };
+  }, [cows, inseminations]);
+
+  // Generate reminders (memoized)
+  const reminders = React.useMemo(() => {
+    return generateNotifications(inseminations, cows);
+  }, [inseminations, cows]);
   const activeRemindersCount = reminders.length;
 
-  const stats = [
+  const stats = React.useMemo(() => [
     { 
       name: t('dashboard.totalCows'), 
       value: totalCows, 
@@ -98,7 +110,7 @@ export const Dashboard: React.FC = () => {
       color: 'text-red-600 bg-red-50',
       description: t('dashboard.activeRemindersDesc')
     },
-  ];
+  ], [totalCows, inseminatedCowsCount, cowsApproachingCalvingCount, activeRemindersCount, t]);
 
   const cowLookup = React.useMemo(() => {
     const map = new Map<string, typeof cows[0]>();

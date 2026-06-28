@@ -71,7 +71,7 @@ export const Cows: React.FC = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (cowId: string) => cowsRepository.delete(cowId),
+    mutationFn: (cowId: string) => cowsRepository.delete(user?.uid || '', cowId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cows', user?.uid] });
       queryClient.invalidateQueries({ queryKey: ['inseminations', user?.uid] });
@@ -120,15 +120,17 @@ export const Cows: React.FC = () => {
     }
   };
 
-  const filteredCows = cows.filter(cow => {
-    const term = searchTerm.toLowerCase();
-    return (
-      cow.number.toLowerCase().includes(term) ||
-      (cow.name || '').toLowerCase().includes(term) ||
-      (cow.breed || '').toLowerCase().includes(term) ||
-      (cow.notes || '').toLowerCase().includes(term)
-    );
-  });
+  const filteredCows = React.useMemo(() => {
+    return cows.filter(cow => {
+      const term = searchTerm.toLowerCase();
+      return (
+        cow.number.toLowerCase().includes(term) ||
+        (cow.name || '').toLowerCase().includes(term) ||
+        (cow.breed || '').toLowerCase().includes(term) ||
+        (cow.notes || '').toLowerCase().includes(term)
+      );
+    });
+  }, [cows, searchTerm]);
 
   return (
     <div className="space-y-6">

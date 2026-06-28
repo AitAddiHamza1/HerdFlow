@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const pdfMake = require('pdfmake/build/pdfmake');
+const pdfMake = require('pdfmake-rtl/build/pdfmake');
 
 // 1. Load local fonts as base64
 const regularFontPath = path.join(__dirname, '..', 'public', 'fonts', 'Tajawal-Regular.ttf');
@@ -161,6 +161,7 @@ function buildDocDefinition({ inseminations, cowsLookup, breederName, language, 
   });
 
   const docDefinition = {
+    rtl: isAr, // Force dynamic RTL document layout for Arabic
     pageMargins: [40, 40, 40, 50],
     defaultStyle: {
       font: 'Tajawal'
@@ -216,8 +217,9 @@ function buildDocDefinition({ inseminations, cowsLookup, breederName, language, 
       },
       {
         table: {
+          rtl: isAr, // Let pdfmake-rtl automatically handle column ordering
           headerRows: 1,
-          widths: [65, 90, 65, 50, 90, 85, 70],
+          widths: [90, 85, 65, 35, 85, 75, 80],
           body: tableBody
         },
         layout: {
@@ -263,10 +265,6 @@ function buildDocDefinition({ inseminations, cowsLookup, breederName, language, 
       };
     }
   };
-
-  if (isAr) {
-    docDefinition.textDirection = 'rtl';
-  }
 
   return docDefinition;
 }

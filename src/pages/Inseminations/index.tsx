@@ -63,7 +63,7 @@ export const Inseminations: React.FC = () => {
       inseminationRepository.create(user?.uid || '', payload.cowId, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['inseminations', user?.uid] });
-      queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', variables.cowId] });
+      queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', user?.uid, variables.cowId] });
       resetForm();
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -74,10 +74,10 @@ export const Inseminations: React.FC = () => {
 
   const updateMutation = useMutation({
     mutationFn: (payload: { id: string; cowId: string; date: Timestamp; bullName: string; heatType: string; cost: number }) => 
-      inseminationRepository.update(payload.cowId, payload.id, payload),
+      inseminationRepository.update(user?.uid || '', payload.cowId, payload.id, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['inseminations', user?.uid] });
-      queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', variables.cowId] });
+      queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', user?.uid, variables.cowId] });
       resetForm();
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,10 +88,10 @@ export const Inseminations: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (payload: { id: string; cowId: string }) => 
-      inseminationRepository.delete(payload.cowId, payload.id),
+      inseminationRepository.delete(user?.uid || '', payload.cowId, payload.id),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['inseminations', user?.uid] });
-      queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', variables.cowId] });
+      queryClient.invalidateQueries({ queryKey: ['inseminations', 'cow', user?.uid, variables.cowId] });
       setConfirmDeleteRecord(null);
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

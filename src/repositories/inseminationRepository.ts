@@ -27,7 +27,13 @@ export const inseminationRepository = {
   /**
    * Fetch all inseminations for a specific cow, sorted by date descending
    */
-  async getAllForCow(cowId: string): Promise<Insemination[]> {
+  async getAllForCow(userId: string, cowId: string): Promise<Insemination[]> {
+    // Verify cow ownership first
+    const cow = await cowsRepository.getById(userId, cowId);
+    if (!cow) {
+      throw new Error("Cow not found or unauthorized access.");
+    }
+
     const q = query(
       collection(db, COWS_COLLECTION, cowId, INSEMINATIONS_SUBCOLLECTION),
       orderBy('date', 'desc')
@@ -81,6 +87,17 @@ export const inseminationRepository = {
     cowId: string, 
     data: Omit<Insemination, 'id' | 'userId' | 'cowId' | 'createdAt'>
   ): Promise<Insemination> {
+    // Validation: Cost must not be negative
+    if (data.cost < 0) {
+      throw new Error("Cost cannot be negative.");
+    }
+
+    // Verify cow ownership first
+    const cow = await cowsRepository.getById(userId, cowId);
+    if (!cow) {
+      throw new Error("Cow not found or unauthorized access.");
+    }
+
     const docRef = doc(collection(db, COWS_COLLECTION, cowId, INSEMINATIONS_SUBCOLLECTION));
     const newInsemination: Insemination = {
       id: docRef.id,
@@ -105,10 +122,22 @@ export const inseminationRepository = {
    * Update an existing insemination record
    */
   async update(
+    userId: string,
     cowId: string, 
     inseminationId: string, 
     data: Omit<Insemination, 'id' | 'userId' | 'cowId' | 'createdAt'>
   ): Promise<void> {
+    // Validation: Cost must not be negative
+    if (data.cost < 0) {
+      throw new Error("Cost cannot be negative.");
+    }
+
+    // Verify cow ownership first
+    const cow = await cowsRepository.getById(userId, cowId);
+    if (!cow) {
+      throw new Error("Cow not found or unauthorized access.");
+    }
+
     const docRef = doc(db, COWS_COLLECTION, cowId, INSEMINATIONS_SUBCOLLECTION, inseminationId);
     await updateDoc(docRef, {
       date: data.date,
@@ -121,7 +150,13 @@ export const inseminationRepository = {
   /**
    * Delete an insemination record
    */
-  async delete(cowId: string, inseminationId: string): Promise<void> {
+  async delete(userId: string, cowId: string, inseminationId: string): Promise<void> {
+    // Verify cow ownership first
+    const cow = await cowsRepository.getById(userId, cowId);
+    if (!cow) {
+      throw new Error("Cow not found or unauthorized access.");
+    }
+
     const docRef = doc(db, COWS_COLLECTION, cowId, INSEMINATIONS_SUBCOLLECTION, inseminationId);
     await deleteDoc(docRef);
   }
